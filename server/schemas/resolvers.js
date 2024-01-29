@@ -3,9 +3,10 @@ const { signToken, AuthenticationError } = require("../utils/auth");
 
 const resolvers = {
   Query: {
+    //search for yourseld (to find your saved books)
     me: async (parent, args, context) => {
       if (context.user) {
-        data = await User.findOne({ _id: context.user._id }).select(
+        const data = await User.findOne({ _id: context.user._id }).select(
           "-__v -password"
         );
         return data;
@@ -14,11 +15,13 @@ const resolvers = {
     },
   },
   Mutation: {
+    //adds a user to the DB
     addUser: async (parent, { username, email, password }) => {
       const user = await User.create({ username, email, password });
       const token = signToken(user);
       return { token, user };
     },
+    //login resolver
     login: async (parent, { email, password }) => {
       const user = await User.findOne({ email });
       if (!user) {
@@ -33,19 +36,25 @@ const resolvers = {
       const token = signToken(user);
       return { token, user };
     },
+    //saves a book to your account
     saveBook: async (parent, { book }, context) => {
+      //checks if user is logged in
       if (context.user) {
         const updatedUser = await User.findByIdAndUpdate(
           { _id: context.user._id },
-          { $push: { savedBooks: newBook } },
+          { $push: { savedBooks: book } },
           { new: true }
         );
         return updatedUser;
       }
+      //if not logged in throws authentication error
       throw new AuthenticationError("You need to be logged in!");
     },
+    //removes a saved book
     removeBook: async (parent, { bookId }, context) => {
+      //checks if user is logged in
       if (context.user) {
+        //if not logged in throws authentication error
         const updatedUser = await User.findByIdAndUpdate(
           { _id: context.user._id },
           { $pull: { savedBooks: { bookId } } },
